@@ -15,10 +15,12 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     alphabetical.cpp \
-    professional.cpp
+    professional.cpp \
+    stringutils.cpp
 
 HEADERS  += mainwindow.h \
     alphabetical.h \
-    professional.h
+    professional.h \
+    stringutils.h
 
 FORMS    += mainwindow.ui

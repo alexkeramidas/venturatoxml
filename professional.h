@@ -9,19 +9,23 @@ class Professional
 {
 public:
     Professional();
-    void OpenProfessionalSourceFile(QString samplepath);
+    void OpenProfessionalSourceFile();
 
 private:
     /* Variable declarations */
     QString _professionalFilename;
+    QString aid3;
     QXmlStreamReader professionalXMLReader;
     QXmlStreamWriter professionalFinalXMLWriter;
+    QString categoriesPath;
 
     /* Function Declarations */
-    void CreateProfessionalXML(QString samplepath);
+    void CreateProfessionalXML(QString categoriesPath);
     void processProfessionalEntries();
     void processProfessionalEntry();
+    void writeCategoryImageFiles(QString katigoria);
     QString readNextProfessionalText();
+    QString greekUpperCase(const QString &str);
 };
 
 #endif // PROFESSIONAL_H

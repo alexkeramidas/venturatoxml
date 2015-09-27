@@ -31,8 +31,7 @@ private:
     QPushButton *alphabeticalButton;
     QPushButton *epaggelmatikosButton;
     Alphabetical alphabetical;
-    Professional professional;
-    QString samplepath;
+    Professional professional;    
 };
 
 #endif // MAINWINDOW_H

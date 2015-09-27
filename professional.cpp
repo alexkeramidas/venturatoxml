@@ -1,28 +1,34 @@
 #include "professional.h"
+#include "stringutils.h"
 
 #include <QFile>
 #include <QStringList>
 #include <QDebug>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDirIterator>
+#include <QStandardPaths>
+#include <QFileInfo>
 
 Professional::Professional()
 {
 
 }
 
-void Professional::OpenProfessionalSourceFile(QString samplepath){
+void Professional::OpenProfessionalSourceFile(){
     QString tempElement, tempText;
-    QString fileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Alphabetical Text"),samplepath , "Text files (*.txt)");
+    QString fileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Category Text File"),QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).at(0), "Text files (*.txt)");
     QByteArray line = NULL;
     QFile inFile(fileName);
+    QFileInfo inFileInfo(inFile);
+    categoriesPath  = inFileInfo.dir().path();
     if (!inFile.open(QIODevice::ReadOnly)) {
         qDebug() << inFile.errorString();
         QMessageBox msgBox;
         msgBox.setText("Δεν έχετε επιλέξει αρχείο\nή το αρχείο είναι κατεστραμμένο!");
         msgBox.exec();
     }else{
-        QFile outFile(samplepath + "epaggelmatikos_source_sample.xml");
+        QFile outFile(categoriesPath + "/epaggelmatikos_source_sample.xml");
         outFile.open(QIODevice::WriteOnly);
         QXmlStreamWriter xmlWriter(&outFile);
         xmlWriter.setAutoFormatting(false);
@@ -80,12 +86,12 @@ void Professional::OpenProfessionalSourceFile(QString samplepath){
         xmlWriter.writeEndElement();
         inFile.close();
         outFile.close();
-        CreateProfessionalXML(samplepath);
+        CreateProfessionalXML(categoriesPath);
     }
 }
 
-void Professional::CreateProfessionalXML(QString samplepath){
-    QString _professionalFilename = samplepath + "epaggelmatikos_source_sample.xml";
+void Professional::CreateProfessionalXML(QString categoriesPath){
+    QString _professionalFilename = categoriesPath + "/epaggelmatikos_source_sample.xml";
     QFile xmlInFile(_professionalFilename);
     if (!xmlInFile.open(QIODevice::ReadOnly ))
     {
@@ -97,7 +103,7 @@ void Professional::CreateProfessionalXML(QString samplepath){
     }else{
         professionalXMLReader.setDevice(&xmlInFile);
 
-        QFile xmlOutFile(samplepath + "epaggelmatikos_sample.xml");
+        QFile xmlOutFile(categoriesPath + "/epaggelmatikos.xml");
         xmlOutFile.open(QIODevice::WriteOnly);
         professionalFinalXMLWriter.setDevice(&xmlOutFile);
 
@@ -121,6 +127,7 @@ void Professional::CreateProfessionalXML(QString samplepath){
         professionalFinalXMLWriter.writeEndElement();
         xmlInFile.close();
         xmlOutFile.close();
+        QFile::remove(_professionalFilename);
         QMessageBox msgBox;
         msgBox.setText("Το επαγγγελματικό αρχείο είναι έτοιμο!");
         msgBox.exec();
@@ -136,11 +143,13 @@ void Professional::processProfessionalEntries(){
             while (professionalXMLReader.readNextStartElement()) {
                 if(professionalXMLReader.name() == "KATHG"){
                     QString katigoria = readNextProfessionalText();
+                    professionalFinalXMLWriter.writeStartElement("Category");
                     if(katigoria.length() <= 33){
                         professionalFinalXMLWriter.writeTextElement("KATHG",katigoria);
                         professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
                     }
                     else{
+
                         QStringList katigoriaList = katigoria.split(" ",QString::KeepEmptyParts,Qt::CaseInsensitive);
                         int listlength = katigoriaList.length();
                         QString katigoriaLine = "";
@@ -158,7 +167,8 @@ void Professional::processProfessionalEntries(){
                             }
                         }
                     }
-
+                    writeCategoryImageFiles(katigoria);
+                    professionalFinalXMLWriter.writeEndElement();
                 } else if(professionalXMLReader.name() == "entry")
                     processProfessionalEntry();
                 else
@@ -332,6 +342,22 @@ void Professional::processProfessionalEntry(){
     }
     professionalFinalXMLWriter.writeEndElement();
     professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+}
+
+void Professional::writeCategoryImageFiles(QString katigoria){
+    StringUtils stringUtils;
+    QString categoryImagesPath = categoriesPath + "/" + stringUtils.removeAccents(katigoria).toUpper();
+    if(QDir(categoryImagesPath).exists()){
+        QDirIterator dirIt(categoryImagesPath,QDirIterator::NoIteratorFlags);
+        while (dirIt.hasNext()) {
+            dirIt.next();
+            if (QFileInfo(dirIt.filePath()).isFile())
+                if (QFileInfo(dirIt.filePath()).suffix() == "tif"){
+                    professionalFinalXMLWriter.writeEmptyElement("image");
+                    professionalFinalXMLWriter.writeAttribute("href","file:///" + dirIt.filePath());
+                }
+        }
+    }
 }
 
 QString Professional::readNextProfessionalText() {

@@ -18,8 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     alphabeticalButton -> setGeometry(QRect(QPoint(50, 50), QSize(100, 100)));
     epaggelmatikosButton -> setGeometry(QRect(QPoint(150,50), QSize(100,100)));
     connect(alphabeticalButton, SIGNAL (released()), this, SLOT (alphabeticalButton_clicked()));
-    connect(epaggelmatikosButton, SIGNAL (released()), this, SLOT (epaggelmatikosButton_clicked()));
-    samplepath = "D://Desktop//Projects//LarissaBusinessGuide//Cfiles//Full//";
+    connect(epaggelmatikosButton, SIGNAL (released()), this, SLOT (epaggelmatikosButton_clicked()));    
 }
 
 MainWindow::~MainWindow()
@@ -29,10 +28,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::alphabeticalButton_clicked()
 {
-    alphabetical.OpenAlphabeticalSourceFile(samplepath);
+    alphabetical.OpenAlphabeticalSourceFile();
 }
 
 void MainWindow::epaggelmatikosButton_clicked(){
-    professional.OpenProfessionalSourceFile(samplepath);
+    professional.OpenProfessionalSourceFile();
 }
 

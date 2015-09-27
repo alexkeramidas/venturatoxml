@@ -5,25 +5,30 @@
 #include <QDebug>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDirIterator>
+#include <QStandardPaths>
+#include <QFileInfo>
 
 Alphabetical::Alphabetical()
 {
 
 }
 
-void Alphabetical::OpenAlphabeticalSourceFile(QString samplepath)
+void Alphabetical::OpenAlphabeticalSourceFile()
 {
     QString tempElement, tempText;
-    QString fileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Alphabetical Text"), samplepath , QWidget::tr("Text files (*.txt)"));
+    QString fileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Alphabetical Text"), QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).at(0) , QWidget::tr("Text files (*.txt)"));
     QByteArray line = NULL;
     QFile inFile(fileName);
+    QFileInfo inFileInfo(inFile);
+    alphabeticalPath  = inFileInfo.dir().path();
     if (!inFile.open(QIODevice::ReadOnly)) {
         qDebug() << inFile.errorString();
         QMessageBox msgBox;
         msgBox.setText("Δεν έχετε επιλέξει αρχείο\nή το αρχείο είναι κατεστραμμένο!");
         msgBox.exec();
     }else{
-        QFile outFile(samplepath + "alfavitikos_source_sample.xml");
+        QFile outFile(alphabeticalPath + "/alfavitikos_source_sample.xml");
         outFile.open(QIODevice::WriteOnly);
         QXmlStreamWriter xmlWriter(&outFile);
         xmlWriter.setAutoFormatting(false);
@@ -71,13 +76,13 @@ void Alphabetical::OpenAlphabeticalSourceFile(QString samplepath)
         xmlWriter.writeEndElement();
         inFile.close();
         outFile.close();
-        CreateAlphabeticalXML(samplepath);
+        CreateAlphabeticalXML(alphabeticalPath);
     }
 }
 
-void Alphabetical::CreateAlphabeticalXML(QString samplepath)
+void Alphabetical::CreateAlphabeticalXML(QString alphabeticalPath)
 {
-    QString _alphabeticalFilename = samplepath + "alfavitikos_source_sample.xml";
+    QString _alphabeticalFilename = alphabeticalPath + "/alfavitikos_source_sample.xml";
     QFile xmlInFile(_alphabeticalFilename);
     if (!xmlInFile.open(QIODevice::ReadOnly ))
     {
@@ -87,7 +92,7 @@ void Alphabetical::CreateAlphabeticalXML(QString samplepath)
         msgBox.exec();
     }else{
         alphabeticalXMLReader.setDevice(&xmlInFile);
-        QFile xmlOutFile(samplepath + "alfavitikos_sample.xml");
+        QFile xmlOutFile(alphabeticalPath + "/alfavitikos.xml");
         xmlOutFile.open(QIODevice::WriteOnly);
         alphabeticalFinalXMLWriter.setDevice(&xmlOutFile);
 
@@ -108,6 +113,7 @@ void Alphabetical::CreateAlphabeticalXML(QString samplepath)
         alphabeticalFinalXMLWriter.writeEndElement();
         xmlInFile.close();
         xmlOutFile.close();
+        QFile::remove(_alphabeticalFilename);
         QMessageBox msgBox;
         msgBox.setText("Το αλφαβητικό αρχείο είναι έτοιμο!");
         msgBox.exec();

@@ -9,16 +9,17 @@ class Alphabetical
 {
 public:
     Alphabetical();
-    void OpenAlphabeticalSourceFile(QString samplepath);
+    void OpenAlphabeticalSourceFile();
 
 private:
     /* Variable declarations */
     QString _alphabeticalFilename;
     QXmlStreamReader alphabeticalXMLReader;
     QXmlStreamWriter alphabeticalFinalXMLWriter;
+    QString alphabeticalPath;
 
     /* Function Declarations */
-    void CreateAlphabeticalXML(QString samplepath);
+    void CreateAlphabeticalXML(QString alphabeticalPath);
     void processAlphabeticalEntries();
     void processAlphabeticalEntry();
     QString readNextAlphabeticalText();
