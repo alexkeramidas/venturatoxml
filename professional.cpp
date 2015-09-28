@@ -91,7 +91,10 @@ void Professional::OpenProfessionalSourceFile(){
 }
 
 void Professional::CreateProfessionalXML(QString categoriesPath){
-    QString _professionalFilename = categoriesPath + "/epaggelmatikos_source_sample.xml";
+    _professionalFilename = categoriesPath + "/epaggelmatikos_source_sample.xml";
+    aid3 = "http://ns.adobe.com/AdobeInDesign/3.0/";
+    aid4 = "http://ns.adobe.com/AdobeInDesign/4.0/";
+    aid5 = "http://ns.adobe.com/AdobeInDesign/5.0/";
     QFile xmlInFile(_professionalFilename);
     if (!xmlInFile.open(QIODevice::ReadOnly ))
     {
@@ -110,9 +113,9 @@ void Professional::CreateProfessionalXML(QString categoriesPath){
         if(professionalXMLReader.readNextStartElement() && professionalXMLReader.name() == "ROOT"){
             professionalFinalXMLWriter.writeStartDocument("1.0", true);
             professionalFinalXMLWriter.writeProcessingInstruction("whitespace-handling","use-tags");
-            professionalFinalXMLWriter.writeNamespace("http://ns.adobe.com/AdobeInDesign/3.0/","aid3");
-            professionalFinalXMLWriter.writeNamespace("http://ns.adobe.com/AdobeInDesign/4.0/","aid4");
-            professionalFinalXMLWriter.writeNamespace("http://ns.adobe.com/AdobeInDesign/5.0/","aid5");
+            professionalFinalXMLWriter.writeNamespace(aid3,"aid3");
+            professionalFinalXMLWriter.writeNamespace(aid4,"aid4");
+            professionalFinalXMLWriter.writeNamespace(aid5,"aid5");
             professionalFinalXMLWriter.writeStartElement("ROOT");
             processProfessionalEntries();
         }
@@ -146,7 +149,7 @@ void Professional::processProfessionalEntries(){
                     professionalFinalXMLWriter.writeStartElement("Category");
                     if(katigoria.length() <= 33){
                         professionalFinalXMLWriter.writeTextElement("KATHG",katigoria);
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+                        professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
                     }
                     else{
 
@@ -158,12 +161,12 @@ void Professional::processProfessionalEntries(){
                             if(i < listlength - 1 ){
                                 if(katigoriaLine.length() +  katigoriaList[i+1].length() > 33){
                                     professionalFinalXMLWriter.writeTextElement("KATHG",katigoriaLine.simplified());
-                                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+                                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
                                     katigoriaLine = "";
                                 }
                             }else{
                                 professionalFinalXMLWriter.writeTextElement("KATHG",katigoriaLine.simplified());
-                                professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+                                professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
                             }
                         }
                     }
@@ -185,7 +188,6 @@ void Professional::processProfessionalEntry(){
 
     QString onoma, odos, tilefono, tag, kimeno,telb;
     while (professionalXMLReader.readNextStartElement()) {
-
         if (professionalXMLReader.name() == "ONOMA"
                 || professionalXMLReader.name() == "ONOMA-B"
                 || professionalXMLReader.name() == "ONOMA-S"){
@@ -224,124 +226,95 @@ void Professional::processProfessionalEntry(){
     professionalFinalXMLWriter.writeStartElement("entry");
     if(onoma.length() > 0 ){
         if(tag == "ONOMA" && onoma != ""){
-            professionalFinalXMLWriter.writeTextElement("ONOMA", onoma);
             if(onoma.length() + odos.length() < 46){
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeTextElement("DIEYT2", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT2", tilefono);
-                }
+                professionalFinalXMLWriter.writeStartElement("ONOMA");
+                professionalFinalXMLWriter.writeCharacters(onoma);
+                professionalFinalXMLWriter.writeTextElement("DIEYT2", odos);
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                professionalFinalXMLWriter.writeTextElement("DIEYT2", tilefono);
+                professionalFinalXMLWriter.writeEndElement();
             } else {
                 if(onoma.length() >= 46 && odos.length() < 46 ){
-                    if(odos != ""){
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1", odos);
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1", tilefono);
-                    }
+                    professionalFinalXMLWriter.writeTextElement("ONOMA", onoma);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1", odos);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1", tilefono);
                 }else if(onoma.length() >= 46 && odos.length() >= 46 ){
-                    if(odos != ""){
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1", odos);
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1", tilefono);
-                    }
+                    professionalFinalXMLWriter.writeTextElement("ONOMA", onoma);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1", odos);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1", tilefono);
                 } else {
-                    if(odos != ""){
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1", odos);
-                        professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1", tilefono);
-                    }
+                    professionalFinalXMLWriter.writeTextElement("ONOMA", onoma);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1", odos);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1", tilefono);
                 }
             }
         }
         else if(tag == "ONOMA-B" && onoma != ""){
-            professionalFinalXMLWriter.writeTextElement("ONOMA-B", onoma);
+            professionalFinalXMLWriter.writeStartElement("ONOMA-B");
             if(kimeno != ""){
-                professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+                professionalFinalXMLWriter.writeCharacters(onoma);
+                professionalFinalXMLWriter.writeEndElement();
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
                 professionalFinalXMLWriter.writeTextElement("KIMENO-B", kimeno);
-            }
-            if(onoma.length() < 30){
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                    if(odos.length() < 40)
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1-B", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT1-B", telb);
-                }
-            }
-            else if(onoma.length() < 30 && odos.length() <= 45){
-                if(odos != ""){
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                professionalFinalXMLWriter.writeTextElement("DIEYT1-B", odos);
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                professionalFinalXMLWriter.writeTextElement("TEL-B", telb);
+            }else{
+                if(onoma.length() + odos.length() <= 25){
+                    professionalFinalXMLWriter.writeCharacters(onoma);
                     professionalFinalXMLWriter.writeTextElement("DIEYT2-B", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT2-B", telb);
-                }
-            }
-            else if(onoma.length() < 30 && odos.length() > 45){
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                    if(odos.length() < 40)
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1-B", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT1-B", telb);
-                }
-            }
-            else{
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                    if(odos.length() < 40)
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1-B", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT1-B", telb);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("TEL-B", telb);
+                    professionalFinalXMLWriter.writeEndElement();
+                }else{
+                    professionalFinalXMLWriter.writeCharacters(onoma);
+                    professionalFinalXMLWriter.writeEndElement();
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1-B", odos);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("TEL-B", telb);
                 }
             }
         }
         else if(tag == "ONOMA-S" && onoma != ""){
-            professionalFinalXMLWriter.writeTextElement("ONOMA-S", onoma);
+            professionalFinalXMLWriter.writeStartElement("ONOMA-S");
             if(kimeno != ""){
-                professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+                professionalFinalXMLWriter.writeCharacters(onoma);
+                professionalFinalXMLWriter.writeEndElement();
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
                 professionalFinalXMLWriter.writeTextElement("KIMENO-S", kimeno);
-            }
-            if(onoma.length() < 30){
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                    if(odos.length() < 40)
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1-S", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT1-S", telb);
-                }
-            }
-            else if(onoma.length() < 30 && odos.length() <= 45){
-                if(odos != ""){
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                professionalFinalXMLWriter.writeTextElement("DIEYT1-S", odos);
+                professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                professionalFinalXMLWriter.writeTextElement("TEL-S", telb);
+            }else{
+                if(onoma.length() + odos.length() <= 35){
+                    professionalFinalXMLWriter.writeCharacters(onoma);
                     professionalFinalXMLWriter.writeTextElement("DIEYT2-S", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT2-S", telb);
-                }
-            }
-            else if(onoma.length() < 30 && odos.length() > 45){
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                    if(odos.length() < 40)
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1-S", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT1-S", telb);
-                }
-            }
-            else{
-                if(odos != ""){
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
-                    if(odos.length() < 40)
-                        professionalFinalXMLWriter.writeTextElement("DIEYT1-S", odos);
-                    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","tab");
-                    professionalFinalXMLWriter.writeTextElement("DIEYT1-S", telb);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("TEL-S", telb);
+                    professionalFinalXMLWriter.writeEndElement();
+                }else{
+                    professionalFinalXMLWriter.writeCharacters(onoma);
+                    professionalFinalXMLWriter.writeEndElement();
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    professionalFinalXMLWriter.writeTextElement("DIEYT1-S", odos);
+                    professionalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+                    professionalFinalXMLWriter.writeTextElement("TEL-S", telb);
                 }
             }
         }
     }
     professionalFinalXMLWriter.writeEndElement();
-    professionalFinalXMLWriter.writeEmptyElement("http://ns.adobe.com/AdobeInDesign/3.0/","br");
+    professionalFinalXMLWriter.writeEmptyElement(aid3,"br");
 }
 
 void Professional::writeCategoryImageFiles(QString katigoria){
@@ -354,7 +327,7 @@ void Professional::writeCategoryImageFiles(QString katigoria){
             if (QFileInfo(dirIt.filePath()).isFile())
                 if (QFileInfo(dirIt.filePath()).suffix() == "tif"){
                     professionalFinalXMLWriter.writeEmptyElement("image");
-                    professionalFinalXMLWriter.writeAttribute("href","file:///" + dirIt.filePath());
+                    professionalFinalXMLWriter.writeAttribute("href","file:///" + dirIt.fileName());
                 }
         }
     }

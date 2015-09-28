@@ -41,7 +41,7 @@ void Alphabetical::OpenAlphabeticalSourceFile()
             tempText = line;
             tempElement = line.remove(0,1);
             tempElement = tempElement.remove(QRegExp("=.*"));
-            tempText = tempText.remove(QRegExp("@.*="));
+            tempText = tempText.remove(QRegExp("@.*=")).simplified();
             if((tempElement == "ONOMA" || tempElement == "ONOMA-B")  && counter != 0){
                 xmlWriter.writeEndElement();
                 xmlWriter.writeCharacters("\n");
@@ -83,6 +83,9 @@ void Alphabetical::OpenAlphabeticalSourceFile()
 void Alphabetical::CreateAlphabeticalXML(QString alphabeticalPath)
 {
     QString _alphabeticalFilename = alphabeticalPath + "/alfavitikos_source_sample.xml";
+    aid3 = "http://ns.adobe.com/AdobeInDesign/3.0/";
+    aid4 = "http://ns.adobe.com/AdobeInDesign/4.0/";
+    aid5 = "http://ns.adobe.com/AdobeInDesign/5.0/";
     QFile xmlInFile(_alphabeticalFilename);
     if (!xmlInFile.open(QIODevice::ReadOnly ))
     {
@@ -98,7 +101,10 @@ void Alphabetical::CreateAlphabeticalXML(QString alphabeticalPath)
 
         if(alphabeticalXMLReader.readNextStartElement() && alphabeticalXMLReader.name() == "ROOT"){
             alphabeticalFinalXMLWriter.writeStartDocument("1.0", true);
-            alphabeticalFinalXMLWriter.writeCharacters("\n");
+            alphabeticalFinalXMLWriter.writeProcessingInstruction("whitespace-handling","use-tags");
+            alphabeticalFinalXMLWriter.writeNamespace(aid3,"aid3");
+            alphabeticalFinalXMLWriter.writeNamespace(aid4,"aid4");
+            alphabeticalFinalXMLWriter.writeNamespace(aid5,"aid5");
             alphabeticalFinalXMLWriter.writeStartElement("ROOT");
             processAlphabeticalEntries();
         }
@@ -132,7 +138,6 @@ void Alphabetical::processAlphabeticalEntries(){
             alphabeticalXMLReader.skipCurrentElement();
     }
     alphabeticalFinalXMLWriter.writeEndElement();
-    alphabeticalFinalXMLWriter.writeCharacters("\n");
 }
 
 void Alphabetical::processAlphabeticalEntry(){
@@ -141,32 +146,29 @@ void Alphabetical::processAlphabeticalEntry(){
 
     QString onoma, epaggelma, vlepe, odos, tilefono, tag, website, email;
     while (alphabeticalXMLReader.readNextStartElement()) {
-
         if (alphabeticalXMLReader.name() == "ONOMA" || alphabeticalXMLReader.name() == "ONOMA-B"){
             tag = alphabeticalXMLReader.name().toString();
-            onoma = readNextAlphabeticalText().simplified();
+            onoma = readNextAlphabeticalText() + " ";
         }
         else if (alphabeticalXMLReader.name() == "EPPAG1"
+                 || alphabeticalXMLReader.name() == "EPPAG1-B"
                  || alphabeticalXMLReader.name() == "EPPAG2-B"
                  || alphabeticalXMLReader.name() == "EPPAG2")
-
-            epaggelma = readNextAlphabeticalText().simplified();
-        else if (alphabeticalXMLReader.name() == "EPPAG1-B")
-            epaggelma = readNextAlphabeticalText().simplified();
+            epaggelma = readNextAlphabeticalText().simplified() + " ";
         else if (alphabeticalXMLReader.name() == "DIEYT1" ||
                  alphabeticalXMLReader.name() == "DIEYT1-B" ||
                  alphabeticalXMLReader.name() == "DIEYT2" ||
                  alphabeticalXMLReader.name() == "DIEYT2-B"){
             QStringList diefthinsi = readNextAlphabeticalText().split("\t",QString::KeepEmptyParts,Qt::CaseInsensitive);
             if (diefthinsi.length() == 2){
-                odos = diefthinsi[0];
-                tilefono = diefthinsi[1];
-                tilefono = tilefono;
+                odos = diefthinsi[0].simplified();
+                tilefono = diefthinsi[1].simplified();
+                tilefono = tilefono.simplified();
             } else if (diefthinsi.length() == 1){
-                odos = diefthinsi[0];
+                odos = diefthinsi[0].simplified();
                 tilefono = "0123.456789";
                 if(odos.contains("<9>")){
-                    tilefono = odos.replace("<9>","");
+                    tilefono = odos.replace("<9>","").simplified();
                     odos = "Δεν υπάρχει διεύθυνση";
                 }
             } else {
@@ -181,137 +183,176 @@ void Alphabetical::processAlphabeticalEntry(){
         else if(alphabeticalXMLReader.name() == "VLEPE")
             vlepe = readNextAlphabeticalText().simplified();
     }
-    alphabeticalFinalXMLWriter.writeStartElement("entry");
-    if(tag == "ONOMA" && onoma != ""){
-        alphabeticalFinalXMLWriter.writeTextElement("ONOMA", onoma + " ");
-        if(onoma.length() + epaggelma.length() + odos.length() < 56){
-            if(epaggelma != "")
-                alphabeticalFinalXMLWriter.writeTextElement("EPAG2", epaggelma + " ");
-            if(odos != ""){
-                alphabeticalFinalXMLWriter.writeTextElement("DIEYT2", odos + "\t" + tilefono);
-            }
-        } else {
-            if(onoma.length() + epaggelma.length() >= 56 && epaggelma.length() + odos.length() < 56 ){
-                if(epaggelma != ""){
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("EPAG1", epaggelma + " ");
-                }
-                if(odos != ""){
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT3", odos + "\t" + tilefono);
-                }
-            }else if(onoma.length() + epaggelma.length() >= 56 && epaggelma.length() + odos.length() >= 56 ){
-                if(epaggelma != ""){
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("EPAG1", epaggelma + " ");
-                }
-                if(odos != ""){
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1", odos + "\t" + tilefono);
-                }
-            } else {
-                if(epaggelma != ""){
+    if(onoma.simplified() != ""){
+        alphabeticalFinalXMLWriter.writeStartElement("entry");
+        if(tag == "ONOMA" && onoma != ""){
+            alphabeticalFinalXMLWriter.writeTextElement("ONOMA", onoma);
+            if(onoma.length() + epaggelma.length() + odos.length() < 56){
+                if(epaggelma != "")
                     alphabeticalFinalXMLWriter.writeTextElement("EPAG2", epaggelma);
+                if(odos != "")
+                    nameStreetAndPhone("DIEYT2", odos, tilefono);
+            } else {
+                if(onoma.length() + epaggelma.length() >= 56 && epaggelma.length() + odos.length() < 56 ){
+                    if(epaggelma != ""){
+                        alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                        alphabeticalFinalXMLWriter.writeTextElement("EPAG1", epaggelma);
+                    }
+                    if(odos != "")
+                        nameStreetAndPhone("DIEYT3", odos, tilefono);
+                }else if(onoma.length() + epaggelma.length() >= 56 && epaggelma.length() + odos.length() >= 56 ){
+                    if(epaggelma != ""){
+                        alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                        alphabeticalFinalXMLWriter.writeTextElement("EPAG1", epaggelma);
+                    }
+                    if(odos != "")
+                        streetAndPhone("DIEYT1", odos, tilefono);
+                } else {
+                    if(epaggelma != "")
+                        alphabeticalFinalXMLWriter.writeTextElement("EPAG2", epaggelma);
+                    if(odos != "")
+                        streetAndPhone("DIEYT1", odos, tilefono);
+                }
+            }
+        }
+        else if(tag == "ONOMA-B" && onoma != ""){
+            alphabeticalFinalXMLWriter.writeTextElement("ONOMA-B", onoma);
+            if(onoma.length() + epaggelma.length() < 30){
+                if(epaggelma != "")
+                    alphabeticalFinalXMLWriter.writeTextElement("EPAG2-B", epaggelma);
+                if(odos != ""){
+                    if(odos.length() + tilefono.length() < 40){
+                        tilefono = removeMobileIndicator(tilefono);
+                        streetAndPhone("DIEYT1-B", odos, tilefono);
+                    } else {
+                        QStringList tilefona = tilefono.split(",",QString::KeepEmptyParts,Qt::CaseInsensitive);
+                        QString tilefono0 = tilefona[0];
+                        QString tilefono1 = "";
+                        int i;
+                        for(i=1; i<tilefona.length() - 1; i++)
+                            tilefono1 += tilefona[i] + ", ";
+                        tilefono1 += tilefona[i];
+                        tilefono0 = removeMobileIndicator(tilefono0);
+                        tilefono1 = removeMobileIndicator(tilefono1);
+                        streetAndPhone("DIEYT1-B", odos, tilefono0);
+                        singlePhone(tilefono1);
+                    }
+                }
+            }
+            else if(onoma.length() < 30 && epaggelma.length() + odos.length() <= 45){
+                if(epaggelma != "")
+                    alphabeticalFinalXMLWriter.writeTextElement("EPAG2-B", epaggelma);
+                if(odos != ""){
+                    tilefono = removeMobileIndicator(tilefono);
+                    streetAndPhone("DIEYT2-B", odos, tilefono);
+                }
+            }
+            else if(onoma.length() < 30 && epaggelma.length() + odos.length() > 45){
+                if(epaggelma != ""){
+                    alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    alphabeticalFinalXMLWriter.writeTextElement("EPAG1-B", epaggelma);
                 }
                 if(odos != ""){
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1", odos + "\t" + tilefono);
+                    if(odos.length() + tilefono.length() < 40){
+                        tilefono = removeMobileIndicator(tilefono);
+                        streetAndPhone("DIEYT1-B", odos, tilefono);
+                    }
+                    else {
+                        QStringList tilefona = tilefono.split(",",QString::KeepEmptyParts,Qt::CaseInsensitive);
+                        QString tilefono0 = tilefona[0];
+                        QString tilefono1 = "";
+                        int i;
+                        for(i=1; i<tilefona.length() - 1; i++)
+                            tilefono1 += tilefona[i] + ", ";
+                        tilefono1 += tilefona[i];
+                        tilefono0 = removeMobileIndicator(tilefono0);
+                        tilefono1 = removeMobileIndicator(tilefono1);
+                        streetAndPhone("DIEYT1-B", odos, tilefono0);
+                        singlePhone(tilefono1);
+                    }
                 }
             }
+            else{
+                if(epaggelma != ""){
+                    alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                    alphabeticalFinalXMLWriter.writeTextElement("EPAG1-B", epaggelma);
+                }
+                if(odos != ""){
+                    if(odos.length() + tilefono.length() < 40){
+                        tilefono = removeMobileIndicator(tilefono);
+                        streetAndPhone("DIEYT1-B", odos, tilefono);
+                    } else {
+                        QStringList tilefona = tilefono.split(",",QString::KeepEmptyParts,Qt::CaseInsensitive);
+                        QString tilefono0 = tilefona[0];
+                        QString tilefono1 = "";
+                        int i;
+                        for(i=1; i<tilefona.length() - 1; i++)
+                            tilefono1 += tilefona[i] + ", ";
+                        tilefono1 += tilefona[i];
+                        tilefono0 = removeMobileIndicator(tilefono0);
+                        tilefono1 = removeMobileIndicator(tilefono1);
+                        streetAndPhone("DIEYT1-B", odos, tilefono0);
+                        singlePhone(tilefono1);
+                    }
+                }
+            }
+            if(website != ""){
+                alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                alphabeticalFinalXMLWriter.writeTextElement("WEB-B", website);
+            }
+            if(email != ""){
+                alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                alphabeticalFinalXMLWriter.writeTextElement("EMAIL-B", email);
+            }
+            if(vlepe != ""){
+                alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                alphabeticalFinalXMLWriter.writeTextElement("VLEPE", vlepe);
+            }
         }
+        alphabeticalFinalXMLWriter.writeEndElement();
+        alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
     }
-    else if(tag == "ONOMA-B" && onoma != ""){
-        alphabeticalFinalXMLWriter.writeTextElement("ONOMA-B", onoma);
-        if(onoma.length() + epaggelma.length() < 30){
-            if(epaggelma != "")
-                alphabeticalFinalXMLWriter.writeTextElement("EPAG2-B", epaggelma);
-            if(odos != ""){
-                alphabeticalFinalXMLWriter.writeCharacters("\n");
-                if(odos.length() + tilefono.length() < 40)
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B", odos + "\t" + tilefono);
-                else {
-                    QStringList tilefona = tilefono.split(",",QString::KeepEmptyParts,Qt::CaseInsensitive);
-                    QString tilefono0 = tilefona[0];
-                    QString tilefono1 = "";
-                    int i;
-                    for(i=1; i<tilefona.length() - 1; i++)
-                        tilefono1 += tilefona[i] + ", ";
-                    tilefono1 += tilefona[i];
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B", odos + "\t" + tilefono0);
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B2", "\t" + tilefono1.simplified());
-                }
-            }
-        }
-        else if(onoma.length() < 30 && epaggelma.length() + odos.length() <= 45){
-            if(epaggelma != "")
-                alphabeticalFinalXMLWriter.writeTextElement("EPAG2-B", epaggelma);
-            if(odos != ""){
-                alphabeticalFinalXMLWriter.writeTextElement("DIEYT2-B", odos + "\t" + tilefono);
-            }
-        }
-        else if(onoma.length() < 30 && epaggelma.length() + odos.length() > 45){
-            if(epaggelma != ""){
-                alphabeticalFinalXMLWriter.writeCharacters("\n");
-                alphabeticalFinalXMLWriter.writeTextElement("EPAG1-B", epaggelma);
-            }
-            if(odos != ""){
-                alphabeticalFinalXMLWriter.writeCharacters("\n");
-                if(odos.length() + tilefono.length() < 40)
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B", odos + "\t" + tilefono);
-                else {
-                    QStringList tilefona = tilefono.split(",",QString::KeepEmptyParts,Qt::CaseInsensitive);
-                    QString tilefono0 = tilefona[0];
-                    QString tilefono1 = "";
-                    int i;
-                    for(i=1; i<tilefona.length() - 1; i++)
-                        tilefono1 += tilefona[i] + ", ";
-                    tilefono1 += tilefona[i];
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B", odos + "\t" + tilefono0);
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B2", "\t" + tilefono1.simplified());
-                }
-            }
-        }
-        else{
-            if(epaggelma != ""){
-                alphabeticalFinalXMLWriter.writeCharacters("\n");
-                alphabeticalFinalXMLWriter.writeTextElement("EPAG1-B", epaggelma);
-            }
-            if(odos != ""){
-                alphabeticalFinalXMLWriter.writeCharacters("\n");
-                if(odos.length() + tilefono.length() < 40)
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B", odos + "\t" + tilefono);
-                else {
-                    QStringList tilefona = tilefono.split(",",QString::KeepEmptyParts,Qt::CaseInsensitive);
-                    QString tilefono0 = tilefona[0];
-                    QString tilefono1 = "";
-                    int i;
-                    for(i=1; i<tilefona.length() - 1; i++)
-                        tilefono1 += tilefona[i] + ", ";
-                    tilefono1 += tilefona[i];
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B", odos + "\t" + tilefono0);
-                    alphabeticalFinalXMLWriter.writeCharacters("\n");
-                    alphabeticalFinalXMLWriter.writeTextElement("DIEYT1-B2", "\t" + tilefono1.simplified());
-                }
-            }
-        }
-        if(website != ""){
-            alphabeticalFinalXMLWriter.writeCharacters("\n");
-            alphabeticalFinalXMLWriter.writeTextElement("WEB-B", website);
-        }
-        if(email != ""){
-            alphabeticalFinalXMLWriter.writeCharacters("\n");
-            alphabeticalFinalXMLWriter.writeTextElement("EMAIL-B", email);
-        }
-        if(vlepe != ""){
-            alphabeticalFinalXMLWriter.writeCharacters("\n");
-            alphabeticalFinalXMLWriter.writeTextElement("VLEPE", vlepe);
-        }
-    }
-    alphabeticalFinalXMLWriter.writeEndElement();
-    alphabeticalFinalXMLWriter.writeCharacters("\n");
 }
 
 QString Alphabetical::readNextAlphabeticalText() {
     return alphabeticalXMLReader.readElementText();
+}
+
+QString Alphabetical::removeMobileIndicator(QString tilefono)
+{
+    if(tilefono.contains(",Κιν.:-"))
+        tilefono.remove(",Κιν.:-",Qt::CaseInsensitive);
+    if(tilefono.contains(", Κιν.:-"))
+        tilefono.remove(", Κιν.:-",Qt::CaseInsensitive);
+    return tilefono;
+}
+
+void Alphabetical::streetAndPhone(QString element, QString odos, QString tilefono)
+{
+    alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+    alphabeticalFinalXMLWriter.writeStartElement(element);
+    alphabeticalFinalXMLWriter.writeCharacters(odos.simplified());
+    alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+    alphabeticalFinalXMLWriter.writeCharacters(tilefono.simplified());
+    alphabeticalFinalXMLWriter.writeEndElement();
+}
+
+void Alphabetical::singlePhone(QString tilefono)
+{
+    if(tilefono.length() > 9){
+        alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+        alphabeticalFinalXMLWriter.writeStartElement("DIEYT1-B2");
+        alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+        alphabeticalFinalXMLWriter.writeCharacters(tilefono.simplified());
+        alphabeticalFinalXMLWriter.writeEndElement();
+    }
+}
+
+void Alphabetical::nameStreetAndPhone(QString element, QString odos, QString tilefono)
+{
+    alphabeticalFinalXMLWriter.writeStartElement(element);
+    alphabeticalFinalXMLWriter.writeCharacters(odos.simplified());
+    alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"tab");
+    alphabeticalFinalXMLWriter.writeCharacters(tilefono.simplified());
+    alphabeticalFinalXMLWriter.writeEndElement();
 }

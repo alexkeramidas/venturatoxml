@@ -13,8 +13,7 @@ public:
 
 private:
     /* Variable declarations */
-    QString _professionalFilename;
-    QString aid3;
+    QString _professionalFilename,aid3,aid4,aid5;
     QXmlStreamReader professionalXMLReader;
     QXmlStreamWriter professionalFinalXMLWriter;
     QString categoriesPath;

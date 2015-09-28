@@ -10,10 +10,9 @@ class Alphabetical
 public:
     Alphabetical();
     void OpenAlphabeticalSourceFile();
-
 private:
     /* Variable declarations */
-    QString _alphabeticalFilename;
+    QString _alphabeticalFilename,aid3,aid4,aid5;
     QXmlStreamReader alphabeticalXMLReader;
     QXmlStreamWriter alphabeticalFinalXMLWriter;
     QString alphabeticalPath;
@@ -22,6 +21,10 @@ private:
     void CreateAlphabeticalXML(QString alphabeticalPath);
     void processAlphabeticalEntries();
     void processAlphabeticalEntry();
+    void singlePhone(QString singlePhone);
+    void streetAndPhone(QString element, QString odos, QString tilefono);
+    void nameStreetAndPhone(QString element, QString odos, QString tilefono);
+    QString removeMobileIndicator(QString singlePhone);
     QString readNextAlphabeticalText();
 };
 
