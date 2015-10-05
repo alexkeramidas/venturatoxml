@@ -2,6 +2,7 @@
 #define ALPHABETICAL_H
 
 #include <QString>
+#include <QMap>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
@@ -15,10 +16,11 @@ private:
     QString _alphabeticalFilename,aid3,aid4,aid5;
     QXmlStreamReader alphabeticalXMLReader;
     QXmlStreamWriter alphabeticalFinalXMLWriter;
-    QString alphabeticalPath;
+    QString alphabeticalTextFilePath, alphabeticalImageListFilePath;
+    QMap<QString, QString> imageMap, imageFilesList;
 
     /* Function Declarations */
-    void CreateAlphabeticalXML(QString alphabeticalPath);
+    void CreateAlphabeticalXML(QString alphabeticalTextFilePath);
     void processAlphabeticalEntries();
     void processAlphabeticalEntry();
     void singlePhone(QString singlePhone);

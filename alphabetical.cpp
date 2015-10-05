@@ -16,19 +16,60 @@ Alphabetical::Alphabetical()
 
 void Alphabetical::OpenAlphabeticalSourceFile()
 {
+    /*Read Entries List*/
     QString tempElement, tempText;
-    QString fileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Alphabetical Text"), QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).at(0) , QWidget::tr("Text files (*.txt)"));
+    QString alphabeticalTextFileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Alphabetical Text"), QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation).at(0) , QWidget::tr("Text files (*.txt)"));
     QByteArray line = NULL;
-    QFile inFile(fileName);
-    QFileInfo inFileInfo(inFile);
-    alphabeticalPath  = inFileInfo.dir().path();
-    if (!inFile.open(QIODevice::ReadOnly)) {
-        qDebug() << inFile.errorString();
+    QFile alphabeticalTextFile(alphabeticalTextFileName);
+    QFileInfo inFileInfo(alphabeticalTextFile);
+    alphabeticalTextFilePath  = inFileInfo.dir().path();
+
+    /*Read Image List and Create Image Map*/
+    QString alphabeticalImageListFileName = QFileDialog::getOpenFileName(0, QWidget::tr("Open Image List File"), alphabeticalTextFilePath, QWidget::tr("Text files (*.txt)"));
+    QByteArray imageLine = NULL;
+    QFile alphabeticalImageListFile(alphabeticalImageListFileName);
+    QFileInfo imageListFileInfo(alphabeticalImageListFile);
+    alphabeticalImageListFilePath  = imageListFileInfo.dir().path();
+    if (!alphabeticalImageListFile.open(QIODevice::ReadOnly)) {
+        qDebug() << alphabeticalImageListFile.errorString();
+        QMessageBox msgBox;
+        msgBox.setText("Δεν έχετε επιλέξει σωστό αρχείο φωτογραφιών\nή το αρχείο είναι κατεστραμμένο!");
+        msgBox.exec();
+    }else{
+        while (!alphabeticalImageListFile.atEnd()) {
+            imageLine = alphabeticalImageListFile.readLine();
+            QString tempImage = imageLine;
+            QStringList image = tempImage.split("\t");
+            QString imageCode = image[0].simplified();
+            QString imageName = image[1].simplified();
+            imageMap.insert(imageName,imageCode);
+        }
+    }
+
+    /*Create image file list*/
+    QString alphabeticalImagesFolderPath = alphabeticalImageListFilePath;
+//    QString alphabeticalImagesFolderPath = alphabeticalImageListFilePath + "/images";
+    if(QDir(alphabeticalImagesFolderPath).exists()){
+        QDirIterator dirIt(alphabeticalImagesFolderPath,QDirIterator::NoIteratorFlags);
+        while (dirIt.hasNext()) {
+            dirIt.next();
+            if (QFileInfo(dirIt.filePath()).isFile())
+                if (QFileInfo(dirIt.filePath()).suffix() == "tif"){
+                    dirIt.fileName();
+                    imageFilesList.insert(dirIt.fileName().split("-")[0], dirIt.fileName());
+                }
+        }
+    }
+
+
+    /*Create Temporary XML File*/
+    if (!alphabeticalTextFile.open(QIODevice::ReadOnly)) {
+        qDebug() << alphabeticalTextFile.errorString();
         QMessageBox msgBox;
         msgBox.setText("Δεν έχετε επιλέξει αρχείο\nή το αρχείο είναι κατεστραμμένο!");
         msgBox.exec();
     }else{
-        QFile outFile(alphabeticalPath + "/alfavitikos_source_sample.xml");
+        QFile outFile(alphabeticalTextFilePath + "/alfavitikos_source_sample.xml");
         outFile.open(QIODevice::WriteOnly);
         QXmlStreamWriter xmlWriter(&outFile);
         xmlWriter.setAutoFormatting(false);
@@ -36,47 +77,62 @@ void Alphabetical::OpenAlphabeticalSourceFile()
         xmlWriter.writeStartElement("ROOT");
         xmlWriter.writeStartElement("entries");
         int counter = 0;
-        while (!inFile.atEnd()) {
-            line = inFile.readLine();
+        while (!alphabeticalTextFile.atEnd()) {
+            line = alphabeticalTextFile.readLine();
             tempText = line;
             tempElement = line.remove(0,1);
             tempElement = tempElement.remove(QRegExp("=.*"));
             tempText = tempText.remove(QRegExp("@.*=")).simplified();
-            if((tempElement == "ONOMA" || tempElement == "ONOMA-B")  && counter != 0){
-                xmlWriter.writeEndElement();
-                xmlWriter.writeCharacters("\n");
-                xmlWriter.writeStartElement("entry");
-                xmlWriter.writeTextElement(tempElement,tempText.simplified());
-            } else if(tempElement == "ONOMA" || tempElement == "ONOMA-B") {
-                xmlWriter.writeStartElement("entry");
-                xmlWriter.writeTextElement(tempElement,tempText.simplified());
-            }
-            else if(tempElement == "EPPAG1" || tempElement == "EPPAG1-B"){
-                xmlWriter.writeTextElement(tempElement,tempText.simplified() );
-            }
-            else if(tempElement == "EPPAG2" || tempElement == "EPPAG2-B"){
-                xmlWriter.writeTextElement(tempElement,tempText.simplified());
-            }
-            else if(tempElement == "DIEYT1" || tempElement == "DIEYT1-B"){
-                xmlWriter.writeTextElement(tempElement,tempText.simplified().replace("<9>","\t"));
-            }
-            else if(tempElement == "DIEYT2" || tempElement == "DIEYT2-B"){
-                xmlWriter.writeTextElement(tempElement,tempText.simplified().replace("<9>","\t"));
-            }
-            else if(tempElement == "WEB-B" || tempElement == "EMAIL-B"){
-                xmlWriter.writeTextElement(tempElement,tempText.simplified() );
-            }
-            else if(tempElement == "VLEPE"){
-                xmlWriter.writeTextElement(tempElement,tempText.simplified() );
+            if (imageMap.contains(tempText)){
+                QString tempFileName = imageMap.value(tempText);
+                tempFileName = tempFileName.remove("-", Qt::CaseInsensitive);
+                if(imageFilesList.value(tempFileName) != NULL && counter != 0){
+                    xmlWriter.writeEndElement();
+                    xmlWriter.writeStartElement("entry");
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified());
+                    xmlWriter.writeEmptyElement("image");
+//                    xmlWriter.writeAttribute("href","file:///images/" + imageFilesList.value(tempFileName));
+                    xmlWriter.writeAttribute("href","file:///" + imageFilesList.value(tempFileName));
+                } else if(imageFilesList.value(tempFileName) == NULL) {
+                    xmlWriter.writeStartElement("entry");
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified());
+                }
+            } else {
+                if((tempElement == "ONOMA" || tempElement == "ONOMA-B")  && counter != 0){
+                    xmlWriter.writeEndElement();
+                    xmlWriter.writeStartElement("entry");
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified());
+                } else if(tempElement == "ONOMA" || tempElement == "ONOMA-B") {
+                    xmlWriter.writeStartElement("entry");
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified());
+                }
+                else if(tempElement == "EPPAG1" || tempElement == "EPPAG1-B"){
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified() );
+                }
+                else if(tempElement == "EPPAG2" || tempElement == "EPPAG2-B"){
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified());
+                }
+                else if(tempElement == "DIEYT1" || tempElement == "DIEYT1-B"){
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified().replace("<9>","\t"));
+                }
+                else if(tempElement == "DIEYT2" || tempElement == "DIEYT2-B"){
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified().replace("<9>","\t"));
+                }
+                else if(tempElement == "WEB-B" || tempElement == "EMAIL-B"){
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified() );
+                }
+                else if(tempElement == "VLEPE"){
+                    xmlWriter.writeTextElement(tempElement,tempText.simplified() );
+                }
             }
             counter ++;
         }
         xmlWriter.writeEndElement();
         xmlWriter.writeEndElement();
         xmlWriter.writeEndElement();
-        inFile.close();
+        alphabeticalTextFile.close();
         outFile.close();
-        CreateAlphabeticalXML(alphabeticalPath);
+        CreateAlphabeticalXML(alphabeticalTextFilePath);
     }
 }
 
@@ -144,7 +200,7 @@ void Alphabetical::processAlphabeticalEntry(){
     if (!alphabeticalXMLReader.isStartElement() || alphabeticalXMLReader.name() != "entry")
         return;
 
-    QString onoma, epaggelma, vlepe, odos, tilefono, tag, website, email;
+    QString onoma, epaggelma, vlepe, odos, tilefono, tag, website, email, image;
     while (alphabeticalXMLReader.readNextStartElement()) {
         if (alphabeticalXMLReader.name() == "ONOMA" || alphabeticalXMLReader.name() == "ONOMA-B"){
             tag = alphabeticalXMLReader.name().toString();
@@ -182,11 +238,17 @@ void Alphabetical::processAlphabeticalEntry(){
             email = readNextAlphabeticalText().simplified();
         else if(alphabeticalXMLReader.name() == "VLEPE")
             vlepe = readNextAlphabeticalText().simplified();
+        else if(alphabeticalXMLReader.name() == "image"){
+            image = alphabeticalXMLReader.attributes().at(0).value().toString();
+            readNextAlphabeticalText();
+        }
     }
     if(onoma.simplified() != ""){
         alphabeticalFinalXMLWriter.writeStartElement("entry");
         if(tag == "ONOMA" && onoma != ""){
-            alphabeticalFinalXMLWriter.writeTextElement("ONOMA", onoma);
+            alphabeticalFinalXMLWriter.writeStartElement("ONOMA");
+            alphabeticalFinalXMLWriter.writeCharacters(onoma);
+            alphabeticalFinalXMLWriter.writeEndElement();
             if(onoma.length() + epaggelma.length() + odos.length() < 56){
                 if(epaggelma != "")
                     alphabeticalFinalXMLWriter.writeTextElement("EPAG2", epaggelma);
@@ -214,12 +276,22 @@ void Alphabetical::processAlphabeticalEntry(){
                         streetAndPhone("DIEYT1", odos, tilefono);
                 }
             }
+            if(image != ""){
+                alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                alphabeticalFinalXMLWriter.writeEmptyElement("image");
+                alphabeticalFinalXMLWriter.writeAttribute("href",image);
+            }
         }
         else if(tag == "ONOMA-B" && onoma != ""){
-            alphabeticalFinalXMLWriter.writeTextElement("ONOMA-B", onoma);
+            alphabeticalFinalXMLWriter.writeStartElement("ONOMA-B");
+            alphabeticalFinalXMLWriter.writeCharacters(onoma);
+            alphabeticalFinalXMLWriter.writeEndElement();
             if(onoma.length() + epaggelma.length() < 30){
-                if(epaggelma != "")
-                    alphabeticalFinalXMLWriter.writeTextElement("EPAG2-B", epaggelma);
+                if(epaggelma != ""){
+                    alphabeticalFinalXMLWriter.writeStartElement("EPAG2-B");
+                    alphabeticalFinalXMLWriter.writeCharacters(epaggelma);
+                    alphabeticalFinalXMLWriter.writeEndElement();
+                }
                 if(odos != ""){
                     if(odos.length() + tilefono.length() < 40){
                         tilefono = removeMobileIndicator(tilefono);
@@ -238,10 +310,12 @@ void Alphabetical::processAlphabeticalEntry(){
                         singlePhone(tilefono1);
                     }
                 }
-            }
-            else if(onoma.length() < 30 && epaggelma.length() + odos.length() <= 45){
-                if(epaggelma != "")
-                    alphabeticalFinalXMLWriter.writeTextElement("EPAG2-B", epaggelma);
+            } else if(onoma.length() < 30 && epaggelma.length() + odos.length() <= 45){
+                if(epaggelma != ""){
+                    alphabeticalFinalXMLWriter.writeStartElement("EPAG2-B");
+                    alphabeticalFinalXMLWriter.writeCharacters(epaggelma);
+                    alphabeticalFinalXMLWriter.writeEndElement();
+                }
                 if(odos != ""){
                     tilefono = removeMobileIndicator(tilefono);
                     streetAndPhone("DIEYT2-B", odos, tilefono);
@@ -250,7 +324,9 @@ void Alphabetical::processAlphabeticalEntry(){
             else if(onoma.length() < 30 && epaggelma.length() + odos.length() > 45){
                 if(epaggelma != ""){
                     alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
-                    alphabeticalFinalXMLWriter.writeTextElement("EPAG1-B", epaggelma);
+                    alphabeticalFinalXMLWriter.writeStartElement("EPAG1-B");
+                    alphabeticalFinalXMLWriter.writeCharacters(epaggelma);
+                    alphabeticalFinalXMLWriter.writeEndElement();
                 }
                 if(odos != ""){
                     if(odos.length() + tilefono.length() < 40){
@@ -275,7 +351,9 @@ void Alphabetical::processAlphabeticalEntry(){
             else{
                 if(epaggelma != ""){
                     alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
-                    alphabeticalFinalXMLWriter.writeTextElement("EPAG1-B", epaggelma);
+                    alphabeticalFinalXMLWriter.writeStartElement("EPAG1-B");
+                    alphabeticalFinalXMLWriter.writeCharacters(epaggelma);
+                    alphabeticalFinalXMLWriter.writeEndElement();
                 }
                 if(odos != ""){
                     if(odos.length() + tilefono.length() < 40){
@@ -307,6 +385,11 @@ void Alphabetical::processAlphabeticalEntry(){
             if(vlepe != ""){
                 alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
                 alphabeticalFinalXMLWriter.writeTextElement("VLEPE", vlepe);
+            }
+            if(image != ""){
+                alphabeticalFinalXMLWriter.writeEmptyElement(aid3,"br");
+                alphabeticalFinalXMLWriter.writeEmptyElement("image");
+                alphabeticalFinalXMLWriter.writeAttribute("href",image);
             }
         }
         alphabeticalFinalXMLWriter.writeEndElement();
